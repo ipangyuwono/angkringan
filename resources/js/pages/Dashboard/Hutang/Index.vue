@@ -4,6 +4,7 @@ import { Head, router } from '@inertiajs/vue3';
 import { useForm } from '@inertiajs/vue3';
 import { Plus, Trash2, CheckCircle, AlertCircle, Wallet } from 'lucide-vue-next';
 import * as hutangWay from '@/routes/hutang';
+import Swal from 'sweetalert2';
 
 interface Hutang {
     id: number;
@@ -58,9 +59,20 @@ const submitBayar = () => {
 };
 
 const deleteHutang = (hutang: Hutang) => {
-    if (confirm(`Hapus hutang "${hutang.nama_penjual}"?`)) {
-        router.delete(hutangWay.destroy.url(hutang.id));
-    }
+    Swal.fire({
+        title: 'Apakah Anda yakin?',
+        text: `Hapus catatan hutang "${hutang.nama_penjual}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(hutangWay.destroy.url(hutang.id));
+        }
+    });
 };
 
 const formatCurrency = (value: number) =>
@@ -180,7 +192,17 @@ const formatDate = (date: string) => {
                         </td>
                     </tr>
                     <tr v-if="props.hutangs.length === 0">
-                        <td colspan="8" class="empty-row text-center">Belum ada catatan hutang.</td>
+                        <td colspan="8" class="text-center" style="padding: 60px 20px;">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 14px;">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <path d="M16 13H8"></path>
+                                    <path d="M16 17H8"></path>
+                                    <path d="M10 9H8"></path>
+                                </svg>
+                                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #6b7280;">Belum ada catatan hutang</p>
+                            </div>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -261,10 +283,16 @@ const formatDate = (date: string) => {
 
 <style scoped>
 .stats-row {
-    display: grid; grid-template-columns: repeat(3, 1fr);
+    display: flex; flex-wrap: nowrap;
     gap: 16px; margin-bottom: 22px;
+    overflow-x: auto; padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
 }
+.stats-row::-webkit-scrollbar { height: 6px; }
+.stats-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 .stat-card {
+    flex: 1 1 calc(33.333% - 16px);
+    min-width: 250px;
     background: #fff; border-radius: 14px; padding: 18px 20px;
     display: flex; align-items: center; gap: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-left: 4px solid transparent;

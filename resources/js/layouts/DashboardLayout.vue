@@ -4,7 +4,8 @@ import { dashboard, landing, logout as logoutRoute } from '@/routes';
 import { index as transaksiIndex } from '@/routes/transaksi';
 import { index as barangIndex } from '@/routes/barang';
 import { ref, onMounted, onUnmounted } from 'vue';
-import { index as hutangIndex } from '@/routes/hutang';
+import { index as hutangIndex, my as hutangMy } from '@/routes/hutang';
+import { index as kasIndex, my as kasMy } from '@/routes/kas';
 
 const liveClock = ref('');
 const updateClock = () => {
@@ -37,10 +38,21 @@ const logout = () => {
 
 const pageTitle = () => {
     if (page.url === '/dashboard') return 'Dashboard';
-    if (page.url.startsWith('/dashboard/transaksi')) return 'Transaksi Harian';
-    if (page.url.startsWith('/dashboard/barang')) return 'Master Barang';
+    if (page.url?.startsWith('/dashboard/transaksi')) return 'Transaksi Harian';
+    if (page.url?.startsWith('/dashboard/barang')) return 'Master Barang';
+    if (page.url?.startsWith('/dashboard/kas') || page.url?.startsWith('/dashboard/my-kas')) return 'Manajemen Kas';
+    if (page.url?.startsWith('/dashboard/hutang') || page.url?.startsWith('/dashboard/my-hutang')) return 'Manajemen Hutang';
     return 'Dashboard';
 };
+
+const userEmail = auth?.user?.email || '';
+const isBuyerSession123 = ['ppang7@gmail.com', 'hartanto12@gmail.com', 'sarinoang7@gmail.com'].includes(userEmail);
+const isBuyerSession4 = userEmail === 'alan7@gmail.com';
+
+const keuDropdownOpen = ref(
+    page.url?.startsWith('/dashboard/kas') || page.url?.startsWith('/dashboard/hutang')
+);
+const toggleKeuDropdown = () => keuDropdownOpen.value = !keuDropdownOpen.value;
 </script>
 
 <template>
@@ -86,30 +98,81 @@ const pageTitle = () => {
 
                 <Link
                     :href="transaksiIndex.url()"
-                    :class="['sidebar-link', page.url.startsWith('/dashboard/transaksi') ? 'active' : '']"
+                    :class="['sidebar-link', page.url?.startsWith('/dashboard/transaksi') ? 'active' : '']"
                 >
                     <span class="link-icon-wrap">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
                     </span>
                     <span class="link-text">Transaksi Harian</span>
-                    <span v-if="page.url.startsWith('/dashboard/transaksi')" class="link-active-dot"></span>
+                    <span v-if="page.url?.startsWith('/dashboard/transaksi')" class="link-active-dot"></span>
                 </Link>
 
                 <template v-if="auth?.user?.role === 'admin'">
                     <Link 
                         :href="barangIndex.url()" 
-                        :class="['sidebar-link', page.url.startsWith('/dashboard/barang') ? 'active' : '']"
+                        :class="['sidebar-link', page.url?.startsWith('/dashboard/barang') ? 'active' : '']"
                     >
                         <span class="link-icon-wrap">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                         </span>
                         <span class="link-text">Master Barang</span>
-                        <span v-if="page.url.startsWith('/dashboard/barang')" class="link-active-dot"></span>
+                        <span v-if="page.url?.startsWith('/dashboard/barang')" class="link-active-dot"></span>
+                    </Link>
+
+                    <!-- Dropdown Manajemen Keuangan (Admin Only) -->
+                    <div class="sidebar-dropdown">
+                        <button 
+                            @click="toggleKeuDropdown"
+                            :class="['sidebar-link w-100', (page.url?.startsWith('/dashboard/kas') || page.url?.startsWith('/dashboard/hutang')) ? 'active' : '']"
+                            style="border: none; outline: none; background: transparent; text-align: left;"
+                        >
+                            <span class="link-icon-wrap">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
+                            </span>
+                            <span class="link-text">Manajemen Keuangan</span>
+                            <span class="action-arrow" :style="{ transform: keuDropdownOpen ? 'rotate(90deg)' : 'rotate(0)' }" style="transition: transform 0.2s;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </span>
+                        </button>
+                        
+                        <div v-if="keuDropdownOpen" class="dropdown-menu">
+                            <Link 
+                                :href="kasIndex.url()"
+                                :class="['dropdown-link', page.url?.startsWith('/dashboard/kas') ? 'active' : '']"
+                            >
+                                Manajemen Kas
+                            </Link>
+                            <Link 
+                                :href="hutangIndex.url()"
+                                :class="['dropdown-link', page.url?.startsWith('/dashboard/hutang') ? 'active' : '']"
+                            >
+                                Manajemen Hutang
+                            </Link>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- For Sellers -->
+                <template v-else>
+                    <Link 
+                        v-if="isBuyerSession123"
+                        :href="kasMy.url()"
+                        :class="['sidebar-link', page.url?.startsWith('/dashboard/my-kas') ? 'active' : '']"
+                    >
+                        <span class="link-icon-wrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+                            </svg>
+                        </span>
+                        <span class="link-text">Manajemen Kas</span>
                     </Link>
 
                     <Link 
-                        :href="hutangIndex.url()"
-                        :class="['sidebar-link', page.url.startsWith('/dashboard/hutang') ? 'active' : '']"
+                        v-if="isBuyerSession4"
+                        :href="hutangMy.url()"
+                        :class="['sidebar-link', page.url?.startsWith('/dashboard/my-hutang') ? 'active' : '']"
                     >
                         <span class="link-icon-wrap">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -117,7 +180,6 @@ const pageTitle = () => {
                             </svg>
                         </span>
                         <span class="link-text">Manajemen Hutang</span>
-                        <span v-if="page.url.startsWith('/dashboard/hutang')" class="link-active-dot"></span>
                     </Link>
                 </template>
             </nav>
@@ -191,6 +253,15 @@ const pageTitle = () => {
     </div>
 </template>
 
+<style>
+/* Prevent iOS auto-zoom by ensuring inputs/selects are at least 16px on mobile */
+@media (max-width: 768px) {
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+        font-size: 16px !important;
+    }
+}
+</style>
+
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
@@ -210,7 +281,9 @@ const pageTitle = () => {
 .argon-sidebar {
     width: 250px;
     flex-shrink: 0;
-    background: linear-gradient(195deg, #1a7a4a 0%, #18a55e 40%, #22c55e 100%);
+    background: linear-gradient(195deg, rgba(26,122,74,0.85) 0%, rgba(24,165,94,0.85) 40%, rgba(34,197,94,0.85) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     flex-direction: column;
     position: sticky;
@@ -342,6 +415,61 @@ const pageTitle = () => {
     flex-shrink: 0;
 }
 
+/* Sidebar Dropdown Menu */
+.sidebar-dropdown {
+    display: flex;
+    flex-direction: column;
+}
+.w-100 { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
+
+/* Parent button custom active state */
+.sidebar-link.w-100.active {
+    background: rgba(255,255,255,0.12) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+}
+.sidebar-link.w-100.active .link-icon-wrap {
+    background: rgba(255,255,255,0.2) !important;
+    color: #ffffff !important;
+}
+
+.dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    padding-left: 16px;
+    margin-left: 32px;
+    border-left: 1px solid rgba(255,255,255,0.2);
+    margin-top: 6px;
+    margin-bottom: 6px;
+    gap: 4px;
+    animation: dropdownSlide 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes dropdownSlide {
+    0% { opacity: 0; transform: translateY(-8px) translateX(-6px); }
+    100% { opacity: 1; transform: translateY(0) translateX(0); }
+}
+
+.dropdown-link {
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+.dropdown-link:hover {
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.08);
+}
+.dropdown-link.active {
+    color: #fff;
+    font-weight: 700;
+    background: rgba(255,255,255,0.15);
+}
+
 /* Sidebar Footer */
 .sidebar-footer {
     padding: 10px 8px 16px;
@@ -425,7 +553,9 @@ const pageTitle = () => {
 
 /* ── ARGON BANNER (signature top section) ── */
 .argon-banner {
-    background: linear-gradient(195deg, #1a7a4a 0%, #22c55e 100%);
+    background: linear-gradient(195deg, rgba(26,122,74,0.85) 0%, rgba(34,197,94,0.85) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     padding: 22px 28px 80px;
     position: relative;
     overflow: hidden;

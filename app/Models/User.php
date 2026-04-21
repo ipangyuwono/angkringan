@@ -29,6 +29,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'otp_expires_at' => 'datetime',
         ];
     }
     protected $fillable = [
@@ -37,6 +38,8 @@ class User extends Authenticatable
         'password',
         'role',
         'nama_penjual',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     public function isAdmin(): bool

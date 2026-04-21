@@ -11,7 +11,10 @@ Chart.register(...registerables);
 const props = defineProps<{
     total_hari_ini: number;
     total_bulan_ini: number;
+    persentase_bulan_ini: number;
     chart_7_hari: { tanggal: string; total: number }[];
+    chart_6_bulan: { bulan: string; total: number }[];
+    top_menu: { nama_barang: string; terjual: number }[];
     history_harga: { 
         id: number; 
         nama_barang: string; 
@@ -22,9 +25,12 @@ const props = defineProps<{
 }>();
 
 const chartRef = ref<HTMLCanvasElement | null>(null);
+const chart6BulanRef = ref<HTMLCanvasElement | null>(null);
+const topMenuRef = ref<HTMLCanvasElement | null>(null);
 
 onMounted(() => {
-    if (!chartRef.value) return;
+    // 7 Hari Line Chart
+    if (chartRef.value) {
     new Chart(chartRef.value, {
         type: 'line',
         data: {
@@ -50,8 +56,8 @@ onMounted(() => {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: (ctx) =>
-                            'Rp ' + ctx.parsed.y.toLocaleString('id-ID'),
+                        label: (ctx: any) =>
+                            'Rp ' + (ctx.parsed.y || 0).toLocaleString('id-ID'),
                     },
                 },
             },
@@ -72,6 +78,90 @@ onMounted(() => {
             },
         },
     });
+    }
+
+    // 6 Bulan Line Chart
+    if (chart6BulanRef.value) {
+        new Chart(chart6BulanRef.value, {
+            type: 'line',
+            data: {
+                labels: props.chart_6_bulan?.map((d) => d.bulan).reverse() || [],
+                datasets: [
+                    {
+                        label: 'Omzet',
+                        data: props.chart_6_bulan?.map((d) => d.total).reverse() || [],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(59,130,246,0.1)',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#2563eb',
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.4,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx: any) => 'Rp ' + (ctx.parsed.y || 0).toLocaleString('id-ID'),
+                        },
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (val) => 'Rp ' + Number(val).toLocaleString('id-ID'),
+                            font: { size: 10 },
+                        },
+                        grid: { color: '#f3f4f6' },
+                    },
+                    x: {
+                        ticks: { font: { size: 10 } },
+                        grid: { display: false },
+                    },
+                },
+            },
+        });
+    }
+
+    // Top 5 Menu Doughnut Chart
+    if (topMenuRef.value) {
+        new Chart(topMenuRef.value, {
+            type: 'doughnut',
+            data: {
+                labels: props.top_menu?.map((d) => d.nama_barang) || [],
+                datasets: [
+                    {
+                        data: props.top_menu?.map((d) => d.terjual) || [],
+                        backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#eab308', '#a855f7'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { boxWidth: 12, usePointStyle: true, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx: any) => ` ${ctx.label}: ${ctx.parsed} terjual`,
+                        },
+                    },
+                },
+            },
+        });
+    }
 });
 
 const formatCurrency = (value: number) => {
@@ -80,6 +170,18 @@ const formatCurrency = (value: number) => {
         currency: 'IDR',
         minimumFractionDigits: 0,
     }).format(value);
+};
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date).replace('.', ':');
 };
 </script>
 
@@ -125,35 +227,46 @@ const formatCurrency = (value: number) => {
             </div>
         </div>
 
-        <!-- Pelanggan -->
+        <!-- Pertumbuhan Bulanan -->
         <div class="stat-card">
-            <div class="stat-icon-wrap purple">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="stat-icon"
-                >
-                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                    <line x1="16" x2="16" y1="2" y2="6" />
-                    <line x1="8" x2="8" y1="2" y2="6" />
-                    <line x1="3" x2="21" y1="10" y2="10" />
-                </svg>
+            <div class="stat-icon-wrap" :class="props.persentase_bulan_ini >= 0 ? 'green' : 'red'">
+                <TrendingUp class="stat-icon" v-if="props.persentase_bulan_ini >= 0" />
+                <TrendingUp class="stat-icon" v-else style="transform: rotate(180deg);" />
             </div>
             <div class="stat-body">
-                <p class="stat-label">SEJAK TAHUN</p>
-                <h3 class="stat-value">2012</h3>
+                <p class="stat-label">Kenaikan MoM</p>
+                <h3 class="stat-value" :class="props.persentase_bulan_ini >= 0 ? 'text-green' : 'text-red'">
+                    <span v-if="props.persentase_bulan_ini > 0">+</span>{{ props.persentase_bulan_ini }}%
+                </h3>
             </div>
         </div>
     </div>
 
-    <!-- ── BOTTOM ROW ── -->
+    <!-- ── ROW 1: Tren 6 Bulan & Top Menu ── -->
+    <div class="bottom-row" style="margin-bottom: 20px;">
+        <!-- 6 Bulan Panel -->
+        <div class="panel activity-panel">
+            <div class="panel-header">
+                <h5 class="panel-title">Omzet 6 Bulan Terakhir</h5>
+            </div>
+            <div class="panel-body" style="height: 260px; position: relative">
+                <canvas ref="chart6BulanRef"></canvas>
+            </div>
+        </div>
+
+        <!-- Top 5 Menu Panel -->
+        <div class="panel history-panel">
+            <div class="panel-header">
+                <h5 class="panel-title">Top 5 Menu Terlaris</h5>
+                <span class="panel-badge">Bulan Ini</span>
+            </div>
+            <div class="panel-body" style="height: 260px; position: relative; padding: 20px;">
+                <canvas ref="topMenuRef"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ROW 2: 7 Hari & History Harga ── -->
     <div class="bottom-row">
         <!-- Activity Panel -->
         <div class="panel activity-panel">
@@ -173,13 +286,20 @@ const formatCurrency = (value: number) => {
 
         <!-- Quick Actions -->
         <div class="panel history-panel">
-            <div class="panel-header">
-            <h5 class="panel-title">Riwayat Perubahan Harga</h5>
-            <Link :href="barangRoutes.index.url()" class="view-all-link">Lihat Semua</Link>
-        </div>
-        <div class="panel-body history-list">
+    <div class="panel-header">
+        <h5 class="panel-title">Riwayat Perubahan Harga</h5>
+        <Link :href="barangRoutes.index.url()" class="view-all-link">Lihat Semua</Link>
+    </div>
+    
+    <div class="panel-body history-list">
         <div v-if="props.history_harga?.length === 0" class="empty-history">
-            Belum ada perubahan harga.
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>  
+            <p style="margin: 0; font-size: 13.5px; font-weight: 600; color: #6b7280;">Belum ada riwayat harga</p>
+            <p style="margin: 4px 0 0; font-size: 11px; color: #9ca3af;">Perubahan harga barang akan dicatat di sini.</p>
         </div>
         
         <div v-for="item in props.history_harga" :key="item.id" class="history-item">
@@ -187,20 +307,22 @@ const formatCurrency = (value: number) => {
                 <TrendingUp v-if="item.harga_baru > item.harga_lama" :size="14" />
                 <TrendingUp v-else :size="14" style="transform: rotate(180deg);" />
             </div>
+
             <div class="history-content">
                 <div class="history-main">
                     <span class="history-name">{{ item.nama_barang }}</span>
-                    <span class="history-time">{{ item.updated_at }}</span>
+                    <span class="history-time">{{ formatDate(item.updated_at) }}</span>
                 </div>
+        
                 <div class="history-details">
                     <span class="old-price">{{ formatCurrency(item.harga_lama) }}</span>
                     <span class="price-arrow">→</span>
                     <span class="new-price">{{ formatCurrency(item.harga_baru) }}</span>
                 </div>
-            </div>
-        </div>
-    </div>
-    </div>
+            </div> 
+        </div> 
+    </div> 
+</div>
     </div>
 </template>
 
@@ -255,6 +377,9 @@ const formatCurrency = (value: number) => {
 .stat-icon-wrap.green {
     background: linear-gradient(135deg, #22c55e, #16a34a);
 }
+.stat-icon-wrap.red {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
 .stat-icon-wrap.blue {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
@@ -290,6 +415,8 @@ const formatCurrency = (value: number) => {
     letter-spacing: -0.5px;
     line-height: 1.2;
 }
+.stat-value.text-green { color: #16a34a; }
+.stat-value.text-red { color: #dc2626; }
 .stat-sub {
     font-size: 11.5px;
     color: #9ca3af;
@@ -553,9 +680,15 @@ const formatCurrency = (value: number) => {
 }
 
 .empty-history {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    color: #9ca3af;
-    font-size: 13px;
-    padding: 20px 0;
+    padding: 30px 20px;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px dashed #e5e7eb;
+    margin: 10px 0;
 }
 </style>

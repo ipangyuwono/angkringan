@@ -26,7 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
+            'role'         => \App\Http\Middleware\CheckRole::class,
+            'otp.verified' => \App\Http\Middleware\OtpVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

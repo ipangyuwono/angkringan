@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
 import { Printer, Calendar, User, TrendingUp, ShoppingCart, Download, Save, RotateCcw, Eye } from 'lucide-vue-next';
 import * as transaksiWay from '@/routes/transaksi';
+import Swal from 'sweetalert2';
 
 interface Barang {
     id: number;
@@ -56,7 +57,12 @@ const setorAmount = ref<number | string>('');
 const setorError = ref('');
 
 const sendToSeller = () => {
-    alert('Data barang bawaan berhasil dikirim dan tersinkronisasi ke Penjual!');
+    Swal.fire({
+        title: 'Berhasil!',
+        text: 'Data barang bawaan berhasil dikirim ke Penjual!',
+        icon: 'success',
+        confirmButtonColor: '#16a34a',
+    });
 };
 
 const fetchTransactions = async () => {
@@ -130,7 +136,12 @@ const updateTransaction = async (t: Transaksi, idx: number) => {
         totalOmset.value = transaksis.value.reduce((acc, cur) => acc + Number(cur.jumlah), 0);
     } catch (error) {
         console.error('Error saving transaction:', error);
-        alert('Gagal menyimpan. Silakan coba lagi.');
+        Swal.fire({
+            title: 'Error!',
+            text: 'Gagal menyimpan. Silakan coba lagi.',
+            icon: 'error',
+            confirmButtonColor: '#dc2626',
+        });
         fetchTransactions();
     } finally {
         savingRows.value.delete(idx);
@@ -512,10 +523,16 @@ const setorValid = computed(() => {
 
 /* ── STAT CARDS ── */
 .stats-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
+    display: flex; flex-wrap: nowrap;
     gap: 14px; margin-bottom: 20px;
+    overflow-x: auto; padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
 }
+.stats-grid::-webkit-scrollbar { height: 6px; }
+.stats-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 .stat-card {
+    flex: 1 1 calc(33.333% - 14px);
+    min-width: 240px;
     background: #fff; border-radius: 14px;
     padding: 18px 20px; display: flex; align-items: center; gap: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
@@ -736,7 +753,6 @@ const setorValid = computed(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .stats-grid { grid-template-columns: 1fr; }
     .nama-input { width: 140px; }
 }
 </style>

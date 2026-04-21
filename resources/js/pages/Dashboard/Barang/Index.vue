@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, Search, Download, Eye } from 'lucide-vue-next';
 import * as barangWay from '@/routes/barang';
+import Swal from 'sweetalert2';
 
 interface Barang {
     id: number;
@@ -53,9 +54,20 @@ const submitForm = () => {
 };
 
 const deleteBarang = (barang: Barang) => {
-    if (confirm(`Hapus "${barang.nama_barang}"?`)) {
-        router.delete(barangWay.destroy.url(barang.id));
-    }
+    Swal.fire({
+        title: 'Apakah Anda yakin?',
+        text: `Hapus "${barang.nama_barang}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(barangWay.destroy.url(barang.id));
+        }
+    });
 };
 
 const downloadPdf = () => {
@@ -144,8 +156,8 @@ const formatCurrency = (value: number) =>
                             <th>Nama Barang</th>
                             <th>Harga Default</th>
                             <th>Satuan</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-right">Aksi</th>
+                            <th style="text-align: center;">Status</th>
+                            <th style="text-align: right;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -235,12 +247,16 @@ const formatCurrency = (value: number) =>
 <style scoped>
 /* ── STAT ROW ── */
 .page-stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 22px;
+    display: flex; flex-wrap: nowrap;
+    gap: 16px; margin-bottom: 22px;
+    overflow-x: auto; padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
 }
+.page-stats-row::-webkit-scrollbar { height: 6px; }
+.page-stats-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 .pstat-card {
+    flex: 1 1 calc(33.333% - 16px);
+    min-width: 240px;
     background: #fff;
     border-radius: 14px;
     padding: 18px 20px;
